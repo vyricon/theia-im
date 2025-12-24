@@ -1,53 +1,41 @@
 #!/usr/bin/env node
 /**
- * Theia Smart Relay Bot - Main Entry Point
- * Uses Advanced iMessage Kit with BlueBubbles Server
+ * Theia Smart Relay Bot
+ * Uses Advanced iMessage Kit - connects to server at localhost:1234
  */
 
 import { SDK } from '@photon-ai/advanced-imessage-kit';
 import { supabase } from '../lib/supabase/client';
 import { RelayManager } from '../lib/relay/relay-manager';
-import type { AdvancedMessage } from '../lib/types/relay';
 
-// Configuration
 const YOUR_PHONE = process.env.YOUR_PHONE_NUMBER;
-const BLUEBUBBLES_URL = process.env.BLUEBUBBLES_URL || 'http://localhost:1234';
-const BLUEBUBBLES_PASSWORD = process.env.BLUEBUBBLES_PASSWORD;
+const SERVER_URL = process.env.SERVER_URL || 'http://localhost:1234';
+const API_KEY = process.env.API_KEY;
 
 if (!YOUR_PHONE) {
-  console.error('❌ Error: YOUR_PHONE_NUMBER environment variable is required');
+  console.error('❌ YOUR_PHONE_NUMBER required');
   process.exit(1);
 }
 
-if (!BLUEBUBBLES_PASSWORD) {
-  console.error('❌ Error: BLUEBUBBLES_PASSWORD environment variable is required');
-  console.error('   Set up BlueBubbles Server first: https://bluebubbles.app');
-  process.exit(1);
-}
-
-// Initialize Advanced iMessage SDK with BlueBubbles
+// Create SDK instance like the examples
 const sdk = SDK({
-  serverUrl: BLUEBUBBLES_URL,
-  password: BLUEBUBBLES_PASSWORD,
+  serverUrl: SERVER_URL,
+  apiKey: API_KEY,
   logLevel: 'info',
 });
 
-// Initialize RelayManager
 const relayManager = new RelayManager(YOUR_PHONE, supabase);
 
-console.log('🤖 Theia Smart Relay Bot started...');
-console.log(`📱 Your phone: ${YOUR_PHONE}`);
-console.log(`🔵 BlueBubbles: ${BLUEBUBBLES_URL}`);
-console.log('👁️  Watching for messages...\n');
+console.log('🤖 Theia Smart Relay Bot');
+console.log(`📱 Phone: ${YOUR_PHONE}`);
+console.log(`🔗 Server: ${SERVER_URL}\n`);
 
-// Connect to BlueBubbles server
-await sdk.connect();
+sdk.on('ready', async () => {
+  console.log('✅ Connected and ready');
+  await relayManager.initializeUser();
+});
 
-// Initialize user in database
-await relayManager.initializeUser();
-
-// Listen for new messages
-sdk.on('new-message', async (message: AdvancedMessage) => {
+sdk.on('new-message', async (message) => {
   try {
     // Skip empty messages
     if (!message.text) {
@@ -186,7 +174,8 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
     // SCENARIO 2: Message FROM CONTACT
     // ============================================
     else {
-      console.log(`📨 Message from ${message.sender}: ${message.text}`);
+      const sender = message.handle?.address || 'unknown';
+      console.log(`📨 Message from ${sender}: ${message.text}`);
 
       const isUrgent = relayManager.detectUrgency(message.text);
 
@@ -194,14 +183,14 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
       if (isUrgent) {
         console.log('🚨 URGENT message detected - relaying immediately');
         const yourChatGuid = `any;-;${YOUR_PHONE}`;
-        const urgentMsg = `🚨 URGENT from ${message.sender}:\n"${message.text}"`;
+        const urgentMsg = `🚨 URGENT from ${sender}:\n"${message.text}"`;
         await sdk.messages.sendMessage({
           chatGuid: yourChatGuid,
           message: urgentMsg,
         });
         await relayManager.logRelay({
           conversation_id: crypto.randomUUID(),
-          from_user: message.sender,
+          from_user: sender,
           to_user: YOUR_PHONE,
           original_text: message.text,
           relayed_text: urgentMsg,
@@ -218,7 +207,7 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
 
       if (shouldAutoRespond) {
         // Auto-respond mode
-        console.log(`🤖 Auto-responding to ${message.sender}...`);
+        console.log(`🤖 Auto-responding to ${sender}...`);
 
         const autoResponse = await relayManager.generateAutoResponse(message);
         
@@ -230,7 +219,7 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
 
         // Notify you
         const yourChatGuid = `any;-;${YOUR_PHONE}`;
-        const notification = `✅ Auto-responded to ${message.sender}:\n\nTheir message:\n"${message.text}"\n\nMy response:\n"${autoResponse}"`;
+        const notification = `✅ Auto-responded to ${sender}:\n\nTheir message:\n"${message.text}"\n\nMy response:\n"${autoResponse}"`;
         await sdk.messages.sendMessage({
           chatGuid: yourChatGuid,
           message: notification,
@@ -238,8 +227,8 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
 
         await relayManager.logRelay({
           conversation_id: crypto.randomUUID(),
-          from_user: message.sender,
-          to_user: message.sender,
+          from_user: sender,
+          to_user: sender,
           original_text: message.text,
           relayed_text: autoResponse,
           relay_method: 'auto',
@@ -249,9 +238,9 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
         console.log('✅ Auto-response sent and logged');
       } else {
         // Relay mode - forward to you
-        console.log(`🔄 Relaying to you from ${message.sender}`);
+        console.log(`🔄 Relaying to you from ${sender}`);
         const yourChatGuid = `any;-;${YOUR_PHONE}`;
-        const formattedMessage = `📨 From ${message.sender}:\n"${message.text}"\n\nReply with: Reply: [your message]`;
+        const formattedMessage = `📨 From ${sender}:\n"${message.text}"\n\nReply with: Reply: [your message]`;
 
         await sdk.messages.sendMessage({
           chatGuid: yourChatGuid,
@@ -260,7 +249,7 @@ sdk.on('new-message', async (message: AdvancedMessage) => {
 
         await relayManager.logRelay({
           conversation_id: crypto.randomUUID(),
-          from_user: message.sender,
+          from_user: sender,
           to_user: YOUR_PHONE,
           original_text: message.text,
           relayed_text: formattedMessage,
@@ -307,3 +296,6 @@ process.on('SIGTERM', async () => {
 
 // Keep process alive
 process.stdin.resume();
+
+// Connect to server (like the examples)
+await sdk.connect();

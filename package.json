@@ -20,9 +20,7 @@
     "@ai-sdk/gateway": "^3.0.0",
     "ai": "^4.0.0",
     "zod": "^3.24.0",
-    "@photon-ai/advanced-imessage-kit": "^1.9.0",
-    "axios": "^1.7.0",
-    "socket.io-client": "^4.8.0"
+    "@photon-ai/advanced-imessage-kit": "^1.9.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

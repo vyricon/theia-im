@@ -4,11 +4,10 @@ import { getModel } from '../ai/gateway';
 import {
   UserStatus,
   RelayCommand,
-  AdvancedMessage,
+  Message,
   RelayMessageType,
   URGENT_KEYWORDS,
   STATUS_MESSAGES,
-  UserStatusSchema,
   RelayMessageSchema,
 } from '../types/relay';
 
@@ -25,8 +24,8 @@ export class RelayManager {
   /**
    * Check if message is from you
    */
-  isFromYou(msg: AdvancedMessage): boolean {
-    return msg.isFromMe || msg.sender === this.yourPhone;
+  isFromYou(msg: Message): boolean {
+    return msg.isFromMe || msg.handle?.address === this.yourPhone;
   }
 
   /**
@@ -140,7 +139,7 @@ export class RelayManager {
   /**
    * Decide if should auto-respond to a message
    */
-  async shouldAutoRespond(msg: AdvancedMessage): Promise<boolean> {
+  async shouldAutoRespond(msg: Message): Promise<boolean> {
     try {
       const status = await this.getStatus();
       const isUrgent = this.detectUrgency(msg.text || '');
@@ -153,7 +152,7 @@ export class RelayManager {
         .from('theia_contact_preferences')
         .select('allow_auto_respond')
         .eq('user_phone', this.yourPhone)
-        .eq('contact_phone', msg.sender)
+        .eq('contact_phone', msg.handle?.address)
         .single();
 
       if (prefs && !prefs.allow_auto_respond) return false;
@@ -180,7 +179,7 @@ export class RelayManager {
   /**
    * Generate auto-response using modern AI SDK v4
    */
-  async generateAutoResponse(msg: AdvancedMessage): Promise<string> {
+  async generateAutoResponse(msg: Message): Promise<string> {
     try {
       const status = await this.getStatus();
 
