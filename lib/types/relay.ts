@@ -1,0 +1,79 @@
+import { z } from 'zod';
+
+// User Status Types
+export const UserStatusEnum = z.enum(['available', 'busy', 'away', 'sleep', 'dnd']);
+export type UserStatus = z.infer<typeof UserStatusEnum>;
+
+export const UserStatusSchema = z.object({
+  id: z.string().uuid(),
+  user_phone: z.string(),
+  status: UserStatusEnum,
+  auto_respond_enabled: z.boolean(),
+  updated_at: z.string(),
+  created_at: z.string(),
+});
+export type UserStatusType = z.infer<typeof UserStatusSchema>;
+
+// Relay Message Types
+export const RelayMethodEnum = z.enum(['manual', 'auto', 'urgent']);
+export type RelayMethod = z.infer<typeof RelayMethodEnum>;
+
+export const RelayMessageSchema = z.object({
+  id: z.string().uuid().optional(),
+  conversation_id: z.string().uuid(),
+  from_user: z.string(),
+  to_user: z.string(),
+  original_text: z.string(),
+  relayed_text: z.string().optional(),
+  relay_method: RelayMethodEnum,
+  was_auto_responded: z.boolean(),
+  is_urgent: z.boolean(),
+  metadata: z.record(z.unknown()).optional(),
+  created_at: z.string().optional(),
+});
+export type RelayMessageType = z.infer<typeof RelayMessageSchema>;
+
+// Relay Command Types
+export const RelayCommandTypeEnum = z.enum(['send', 'reply', 'broadcast']);
+export type RelayCommandType = z.infer<typeof RelayCommandTypeEnum>;
+
+export const RelayCommandSchema = z.object({
+  type: RelayCommandTypeEnum,
+  target: z.string(),
+  message: z.string(),
+});
+export type RelayCommand = z.infer<typeof RelayCommandSchema>;
+
+// Advanced iMessage Kit Message type
+export interface AdvancedMessage {
+  guid: string;
+  text: string | null;
+  sender: string;
+  chatGuid: string;
+  isFromMe: boolean;
+  dateCreated: number;
+  dateSent: number;
+  dateRead: number | null;
+}
+
+// Constants
+export const URGENT_KEYWORDS = [
+  'emergency',
+  'urgent',
+  'asap',
+  'now',
+  'immediately',
+  'help',
+  '911',
+  'critical',
+  'important',
+  'hospital',
+  'police',
+] as const;
+
+export const STATUS_MESSAGES: Record<Exclude<UserStatus, 'available'>, string> = {
+  away: "I'm currently away",
+  busy: "I'm busy at the moment",
+  sleep: "I'm sleeping right now",
+  dnd: "I'm unavailable",
+};

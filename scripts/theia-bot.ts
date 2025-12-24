@@ -1,0 +1,309 @@
+#!/usr/bin/env node
+/**
+ * Theia Smart Relay Bot - Main Entry Point
+ * Uses Advanced iMessage Kit with BlueBubbles Server
+ */
+
+import { SDK } from '@photon-ai/advanced-imessage-kit';
+import { supabase } from '../lib/supabase/client';
+import { RelayManager } from '../lib/relay/relay-manager';
+import type { AdvancedMessage } from '../lib/types/relay';
+
+// Configuration
+const YOUR_PHONE = process.env.YOUR_PHONE_NUMBER;
+const BLUEBUBBLES_URL = process.env.BLUEBUBBLES_URL || 'http://localhost:1234';
+const BLUEBUBBLES_PASSWORD = process.env.BLUEBUBBLES_PASSWORD;
+
+if (!YOUR_PHONE) {
+  console.error('❌ Error: YOUR_PHONE_NUMBER environment variable is required');
+  process.exit(1);
+}
+
+if (!BLUEBUBBLES_PASSWORD) {
+  console.error('❌ Error: BLUEBUBBLES_PASSWORD environment variable is required');
+  console.error('   Set up BlueBubbles Server first: https://bluebubbles.app');
+  process.exit(1);
+}
+
+// Initialize Advanced iMessage SDK with BlueBubbles
+const sdk = SDK({
+  serverUrl: BLUEBUBBLES_URL,
+  password: BLUEBUBBLES_PASSWORD,
+  logLevel: 'info',
+});
+
+// Initialize RelayManager
+const relayManager = new RelayManager(YOUR_PHONE, supabase);
+
+console.log('🤖 Theia Smart Relay Bot started...');
+console.log(`📱 Your phone: ${YOUR_PHONE}`);
+console.log(`🔵 BlueBubbles: ${BLUEBUBBLES_URL}`);
+console.log('👁️  Watching for messages...\n');
+
+// Connect to BlueBubbles server
+await sdk.connect();
+
+// Initialize user in database
+await relayManager.initializeUser();
+
+// Listen for new messages
+sdk.on('new-message', async (message: AdvancedMessage) => {
+  try {
+    // Skip empty messages
+    if (!message.text) {
+      return;
+    }
+
+    console.log(`\n📨 New message: ${message.text.substring(0, 50)}...`);
+
+    // Build chatGuid for sending
+    const chatGuid = message.chatGuid;
+
+    // ============================================
+    // SCENARIO 1: Message FROM YOU (Relay Mode)
+    // ============================================
+    if (relayManager.isFromYou(message)) {
+      console.log(`📤 Message from you: ${message.text}`);
+
+      // Check for status commands
+      if (message.text.startsWith('/status')) {
+        const parts = message.text.trim().split(/\s+/);
+
+        if (parts[1] === 'check') {
+          const status = await relayManager.getStatus();
+          await sdk.messages.sendMessage({
+            chatGuid,
+            message: `Current status: ${status}`,
+          });
+          console.log(`✅ Sent status: ${status}`);
+          return;
+        }
+
+        if (
+          parts[1] &&
+          ['available', 'busy', 'away', 'sleep', 'dnd'].includes(parts[1])
+        ) {
+          await relayManager.setStatus(parts[1] as any);
+          await sdk.messages.sendMessage({
+            chatGuid,
+            message: `✅ Status set to: ${parts[1]}`,
+          });
+          console.log(`✅ Status changed to: ${parts[1]}`);
+          return;
+        }
+
+        await sdk.messages.sendMessage({
+          chatGuid,
+          message: '❌ Invalid status command. Use: /status [available|busy|away|sleep|dnd|check]',
+        });
+        return;
+      }
+
+      // Check for digest command
+      if (message.text.startsWith('/digest')) {
+        console.log('📊 Generating digest...');
+        const digest = await relayManager.getDigest(2);
+        await sdk.messages.sendMessage({
+          chatGuid,
+          message: digest,
+        });
+        console.log('✅ Digest sent');
+        return;
+      }
+
+      // Check for relay commands
+      const relayCommand = relayManager.parseRelayCommand(message.text);
+
+      if (relayCommand) {
+        console.log(`🔄 Relay command detected: ${relayCommand.type}`);
+
+        if (relayCommand.type === 'reply') {
+          // Get last sender for reply
+          const lastSender = await relayManager.getLastSender();
+          if (lastSender) {
+            // Build chatGuid for target
+            const targetChatGuid = `iMessage;-;${lastSender}`;
+            await sdk.messages.sendMessage({
+              chatGuid: targetChatGuid,
+              message: relayCommand.message,
+            });
+            await sdk.messages.sendMessage({
+              chatGuid,
+              message: `✅ Sent to ${lastSender}`,
+            });
+            await relayManager.logRelay({
+              conversation_id: crypto.randomUUID(),
+              from_user: YOUR_PHONE,
+              to_user: lastSender,
+              original_text: relayCommand.message,
+              relayed_text: relayCommand.message,
+              relay_method: 'manual',
+              was_auto_responded: false,
+              is_urgent: false,
+            });
+            console.log(`✅ Reply sent to ${lastSender}`);
+          } else {
+            await sdk.messages.sendMessage({
+              chatGuid,
+              message: '❌ No recent conversation to reply to',
+            });
+            console.log('❌ No recent conversation found');
+          }
+          return;
+        }
+
+        if (relayCommand.type === 'send') {
+          // Build chatGuid for target
+          const targetChatGuid = `any;-;${relayCommand.target}`;
+          await sdk.messages.sendMessage({
+            chatGuid: targetChatGuid,
+            message: relayCommand.message,
+          });
+          await sdk.messages.sendMessage({
+            chatGuid,
+            message: `✅ Sent to ${relayCommand.target}`,
+          });
+          await relayManager.logRelay({
+            conversation_id: crypto.randomUUID(),
+            from_user: YOUR_PHONE,
+            to_user: relayCommand.target,
+            original_text: relayCommand.message,
+            relayed_text: relayCommand.message,
+            relay_method: 'manual',
+            was_auto_responded: false,
+            is_urgent: false,
+          });
+          console.log(`✅ Message sent to ${relayCommand.target}`);
+          return;
+        }
+      }
+
+      // Otherwise, normal conversation with Theia
+      console.log('💬 Normal message to Theia (not a relay command)');
+    }
+
+    // ============================================
+    // SCENARIO 2: Message FROM CONTACT
+    // ============================================
+    else {
+      console.log(`📨 Message from ${message.sender}: ${message.text}`);
+
+      const isUrgent = relayManager.detectUrgency(message.text);
+
+      // Always relay urgent messages
+      if (isUrgent) {
+        console.log('🚨 URGENT message detected - relaying immediately');
+        const yourChatGuid = `any;-;${YOUR_PHONE}`;
+        const urgentMsg = `🚨 URGENT from ${message.sender}:\n"${message.text}"`;
+        await sdk.messages.sendMessage({
+          chatGuid: yourChatGuid,
+          message: urgentMsg,
+        });
+        await relayManager.logRelay({
+          conversation_id: crypto.randomUUID(),
+          from_user: message.sender,
+          to_user: YOUR_PHONE,
+          original_text: message.text,
+          relayed_text: urgentMsg,
+          relay_method: 'urgent',
+          was_auto_responded: false,
+          is_urgent: true,
+        });
+        console.log('✅ Urgent message relayed');
+        return;
+      }
+
+      // Check if should auto-respond
+      const shouldAutoRespond = await relayManager.shouldAutoRespond(message);
+
+      if (shouldAutoRespond) {
+        // Auto-respond mode
+        console.log(`🤖 Auto-responding to ${message.sender}...`);
+
+        const autoResponse = await relayManager.generateAutoResponse(message);
+        
+        // Send auto-response to contact
+        await sdk.messages.sendMessage({
+          chatGuid: message.chatGuid,
+          message: autoResponse,
+        });
+
+        // Notify you
+        const yourChatGuid = `any;-;${YOUR_PHONE}`;
+        const notification = `✅ Auto-responded to ${message.sender}:\n\nTheir message:\n"${message.text}"\n\nMy response:\n"${autoResponse}"`;
+        await sdk.messages.sendMessage({
+          chatGuid: yourChatGuid,
+          message: notification,
+        });
+
+        await relayManager.logRelay({
+          conversation_id: crypto.randomUUID(),
+          from_user: message.sender,
+          to_user: message.sender,
+          original_text: message.text,
+          relayed_text: autoResponse,
+          relay_method: 'auto',
+          was_auto_responded: true,
+          is_urgent: false,
+        });
+        console.log('✅ Auto-response sent and logged');
+      } else {
+        // Relay mode - forward to you
+        console.log(`🔄 Relaying to you from ${message.sender}`);
+        const yourChatGuid = `any;-;${YOUR_PHONE}`;
+        const formattedMessage = `📨 From ${message.sender}:\n"${message.text}"\n\nReply with: Reply: [your message]`;
+
+        await sdk.messages.sendMessage({
+          chatGuid: yourChatGuid,
+          message: formattedMessage,
+        });
+
+        await relayManager.logRelay({
+          conversation_id: crypto.randomUUID(),
+          from_user: message.sender,
+          to_user: YOUR_PHONE,
+          original_text: message.text,
+          relayed_text: formattedMessage,
+          relay_method: 'manual',
+          was_auto_responded: false,
+          is_urgent: false,
+        });
+        console.log('✅ Message relayed to you');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error processing message:', error);
+    const errorMsg = `❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    
+    try {
+      const yourChatGuid = `any;-;${YOUR_PHONE}`;
+      await sdk.messages.sendMessage({
+        chatGuid: yourChatGuid,
+        message: errorMsg,
+      });
+    } catch (e) {
+      console.error('Failed to send error message:', e);
+    }
+  }
+});
+
+// Handle errors
+sdk.on('error', (error: Error) => {
+  console.error('❌ SDK error:', error);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down Theia...');
+  await sdk.close();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Shutting down Theia...');
+  await sdk.close();
+  process.exit(0);
+});
+
+// Keep process alive
+process.stdin.resume();
