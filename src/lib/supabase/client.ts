@@ -1,4 +1,12 @@
-import "server-only";
+/**
+ * Server-only Supabase client module.
+ * 
+ * ⚠️ WARNING: This module contains server-only code with service role keys.
+ * - In Next.js: Import only in Server Components, API routes, or server actions
+ * - In Node.js scripts: Safe to import (e.g., bot entrypoint)
+ * - NEVER import in Client Components or expose in browser bundles
+ */
+
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 

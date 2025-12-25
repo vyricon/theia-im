@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createSupabaseServerClient } from '@/src/lib/supabase/client';
-import { UserStatusEnum } from '@/lib/types/relay';
+import { UserStatusEnum } from '@/src/lib/types/relay';
 
 /**
  * GET /api/relay/status
