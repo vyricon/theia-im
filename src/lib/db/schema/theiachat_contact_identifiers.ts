@@ -8,6 +8,7 @@ import {
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 import { theiachatWorkspaces } from './theiachat_workspaces';
 import { theiachatContacts } from './theiachat_contacts';
@@ -83,6 +84,6 @@ export const theiachatContactIdentifiers = pgTable(
       'theiachat_contact_identifiers__uniq_primary_per_kind',
     )
       .on(t.workspace_id, t.contact_id, t.kind)
-      .where(t.is_primary),
+      .where(sql`${t.is_primary} = true`),
   }),
 );

@@ -1,4 +1,37 @@
+/**
+ * Server-only Supabase client module.
+ * 
+ * ⚠️ WARNING: This module contains server-only code with service role keys.
+ * - In Next.js: Import only in Server Components, API routes, or server actions
+ * - In Node.js scripts: Safe to import (e.g., bot entrypoint)
+ * - NEVER import in Client Components or expose in browser bundles
+ */
+
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+
+/**
+ * Server-only Supabase client environment validation.
+ */
+const ServerSupabaseEnv = z.object({
+  SUPABASE_URL: z.string().url("SUPABASE_URL must be a valid URL"),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "SUPABASE_SERVICE_ROLE_KEY is required"),
+});
+
+function getServerSupabaseEnv() {
+  const parsed = ServerSupabaseEnv.safeParse({
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  });
+
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid Supabase server environment:\n${parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n")}`
+    );
+  }
+
+  return parsed.data;
+}
 
 /**
  * Server-only Supabase client (service role).
@@ -8,13 +41,9 @@ import { createClient } from "@supabase/supabase-js";
  * - Uses SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY.
  */
 export function createSupabaseServerClient() {
-  const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const env = getServerSupabaseEnv();
 
-  if (!url) throw new Error("Missing SUPABASE_URL");
-  if (!serviceRoleKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-
-  return createClient(url, serviceRoleKey, {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

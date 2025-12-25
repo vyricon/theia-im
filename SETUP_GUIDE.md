@@ -57,10 +57,16 @@ API_KEY=  # Optional - only if server requires auth
 # Your Phone (REQUIRED)
 YOUR_PHONE_NUMBER=+1234567890
 
-# Supabase (REQUIRED)
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# Database (REQUIRED - server-only)
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# Supabase (REQUIRED - server-only)
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Supabase (Optional - for browser/client usage)
+# NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # AI Provider (REQUIRED - choose one)
 XAI_API_KEY=your-xai-api-key
@@ -69,7 +75,13 @@ OPENAI_API_KEY=your-openai-api-key
 
 # Optional
 THEIA_SIGNATURE="— Theia (AI Assistant)"
+THEIA_DRAFT_TTL_MINUTES=120
 ```
+
+**⚠️ Security Notes:**
+- `DATABASE_URL` and `SUPABASE_URL` are **server-only** - never use `NEXT_PUBLIC_` prefix
+- `SUPABASE_SERVICE_ROLE_KEY` has admin privileges - keep it secret
+- Only use `NEXT_PUBLIC_*` variables for client-side browser access
 
 ### Step 4: Set Up Database
 

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
-import { UserStatusEnum } from '@/lib/types/relay';
+import { createSupabaseServerClient } from '@/src/lib/supabase/client';
+import { UserStatusEnum } from '@/src/lib/types/relay';
 
 /**
  * GET /api/relay/status
@@ -8,6 +8,7 @@ import { UserStatusEnum } from '@/lib/types/relay';
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createSupabaseServerClient();
     const userPhone = process.env.YOUR_PHONE_NUMBER;
 
     if (!userPhone) {
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createSupabaseServerClient();
     const userPhone = process.env.YOUR_PHONE_NUMBER;
 
     if (!userPhone) {

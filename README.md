@@ -73,10 +73,16 @@ npm run bot
 SERVER_URL=http://localhost:1234
 API_KEY=  # Optional - only if server requires auth
 
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+# Database (required)
+DATABASE_URL=postgresql://user:password@host:5432/database
+
+# Supabase (server-only)
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Supabase (client-side, optional for browser usage)
+# NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # AI (choose one)
 XAI_API_KEY=your-xai-key
@@ -86,6 +92,11 @@ OPENAI_API_KEY=your-openai-key
 # Your phone
 YOUR_PHONE_NUMBER=+1234567890
 ```
+
+**Important Notes:**
+- `SUPABASE_URL` and `DATABASE_URL` are **server-only** and must not use `NEXT_PUBLIC_` prefix
+- `SUPABASE_SERVICE_ROLE_KEY` contains admin privileges - never expose in client code
+- Client-side Supabase access (if needed) uses `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 ### 3. Database Setup
 

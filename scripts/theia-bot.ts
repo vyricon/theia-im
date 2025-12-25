@@ -1,7 +1,8 @@
 // scripts/theia-bot.ts
 // Smart Relay Mode bot logic
 
-import { createClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import { createSupabaseServerClient } from '../src/lib/supabase/client';
 import crypto from 'crypto';
 import { RelayManager } from '../src/relay/RelayManager';
 
@@ -16,10 +17,18 @@ type IncomingMessage = {
   // other fields omitted
 };
 
-const SUPABASE_URL = process.env.SUPABASE_URL!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Validate environment on module load
+const BotEnvSchema = z.object({
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+});
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const env = BotEnvSchema.parse({
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+});
+
+const supabase = createSupabaseServerClient();
 
 function assertChatGuidForContactReply(message: IncomingMessage): string {
   const guid = message?.chats?.[0]?.guid;
@@ -110,96 +119,113 @@ function calcExpiry(now = new Date()) {
 
 // Main message handler (hooked up elsewhere in runtime)
 export async function handleIncomingMessage(message: IncomingMessage) {
-  const fromHandle = message.from?.handle;
-  const text = message.text || '';
+  try {
+    const fromHandle = message.from?.handle;
+    const text = message.text || '';
 
-  // Henry controls send policy via natural language
-  if (isHenry(fromHandle)) {
-    const cmd = normalizeCmd(text).toLowerCase();
-    if (cmd.includes('go yolo')) {
-      await RelayManager.setSendPolicy(supabase, 'yolo');
+    console.log(`📨 Processing message from ${fromHandle}`);
+
+    // Henry controls send policy via natural language
+    if (isHenry(fromHandle)) {
+      const cmd = normalizeCmd(text).toLowerCase();
+      if (cmd.includes('go yolo')) {
+        await RelayManager.setSendPolicy(supabase, 'yolo');
+        console.log('✅ Set send policy to YOLO');
+        return;
+      }
+      if (cmd.includes('stop yolo')) {
+        await RelayManager.setSendPolicy(supabase, 'draft');
+        console.log('✅ Set send policy to DRAFT');
+        return;
+      }
+    }
+
+    // Contact messages: generate draft or send depending on policy
+    const chatGuid = assertChatGuidForContactReply(message);
+
+    const directive = await RelayManager.getDirective(supabase);
+
+    // Commands that operate on latest pending draft
+    const trimmed = normalizeCmd(text);
+    const lower = trimmed.toLowerCase();
+    const isSend = lower === 'send';
+    const isCancel = lower === 'cancel';
+    const isEdit = lower.startsWith('edit:');
+
+    if (isSend || isCancel || isEdit) {
+      const latest = await getLatestPendingDraft(fromHandle);
+      if (!latest) {
+        console.log('ℹ️  No pending draft found');
+        return;
+      }
+
+      if (isCancel) {
+        await cancelLatestPendingDraft(fromHandle);
+        console.log('✅ Draft cancelled');
+        return;
+      }
+
+      let body = latest.draft_body;
+      if (isEdit) {
+        const editText = trimmed.slice('edit:'.length).trim();
+        // Replace the draft body with the user-provided edited text (model not used)
+        body = editText;
+        // Write a new pending draft version
+        await upsertPendingDraft({
+          contact_handle: fromHandle,
+          chat_guid: chatGuid,
+          draft_body: body,
+          context: latest.context || directive.context || null,
+          expires_at: calcExpiry(),
+        });
+        console.log('✅ Draft edited');
+      }
+
+      if (isSend) {
+        // send the latest draft (or edited) as TheiaOS format
+        const outbound = wrapTheiaOS(body);
+        await RelayManager.sendToContact({ chatGuid, text: outbound });
+        await cancelLatestPendingDraft(fromHandle);
+        console.log('✅ Message sent');
+        return;
+      }
+
       return;
     }
-    if (cmd.includes('stop yolo')) {
-      await RelayManager.setSendPolicy(supabase, 'draft');
-      return;
-    }
-  }
 
-  // Contact messages: generate draft or send depending on policy
-  const chatGuid = assertChatGuidForContactReply(message);
+    // Normal contact inbound message; generate body-only draft via model
+    const draftBody = await RelayManager.generateDraftBodyForContact({
+      supabase,
+      contactHandle: fromHandle,
+      incomingText: text,
+      directive,
+    });
 
-  const directive = await RelayManager.getDirective(supabase);
+    // Enforce body constraints: max 6 lines, no emoji (best-effort)
+    const safeBody = draftBody
+      .split(/\r?\n/)
+      .slice(0, 6)
+      .join('\n')
+      .replace(/[\p{Extended_Pictographic}]/gu, '');
 
-  // Commands that operate on latest pending draft
-  const trimmed = normalizeCmd(text);
-  const lower = trimmed.toLowerCase();
-  const isSend = lower === 'send';
-  const isCancel = lower === 'cancel';
-  const isEdit = lower.startsWith('edit:');
-
-  if (isSend || isCancel || isEdit) {
-    const latest = await getLatestPendingDraft(fromHandle);
-    if (!latest) return;
-
-    if (isCancel) {
-      await cancelLatestPendingDraft(fromHandle);
-      return;
-    }
-
-    let body = latest.draft_body;
-    if (isEdit) {
-      const editText = trimmed.slice('edit:'.length).trim();
-      // Replace the draft body with the user-provided edited text (model not used)
-      body = editText;
-      // Write a new pending draft version
-      await upsertPendingDraft({
-        contact_handle: fromHandle,
-        chat_guid: chatGuid,
-        draft_body: body,
-        context: latest.context || directive.context || null,
-        expires_at: calcExpiry(),
-      });
-    }
-
-    if (isSend) {
-      // send the latest draft (or edited) as TheiaOS format
-      const outbound = wrapTheiaOS(body);
+    if (directive.send_policy === 'yolo') {
+      const outbound = wrapTheiaOS(safeBody);
       await RelayManager.sendToContact({ chatGuid, text: outbound });
-      await cancelLatestPendingDraft(fromHandle);
+      console.log('✅ Auto-sent (YOLO mode)');
       return;
     }
 
-    return;
+    // draft unless go yolo
+    await upsertPendingDraft({
+      contact_handle: fromHandle,
+      chat_guid: chatGuid,
+      draft_body: safeBody,
+      context: directive.context || null,
+      expires_at: calcExpiry(),
+    });
+    console.log('✅ Draft created');
+  } catch (error) {
+    console.error('❌ Error handling message:', error);
+    throw error;
   }
-
-  // Normal contact inbound message; generate body-only draft via model
-  const draftBody = await RelayManager.generateDraftBodyForContact({
-    supabase,
-    contactHandle: fromHandle,
-    incomingText: text,
-    directive,
-  });
-
-  // Enforce body constraints: max 6 lines, no emoji (best-effort)
-  const safeBody = draftBody
-    .split(/\r?\n/)
-    .slice(0, 6)
-    .join('\n')
-    .replace(/[\p{Extended_Pictographic}]/gu, '');
-
-  if (directive.send_policy === 'yolo') {
-    const outbound = wrapTheiaOS(safeBody);
-    await RelayManager.sendToContact({ chatGuid, text: outbound });
-    return;
-  }
-
-  // draft unless go yolo
-  await upsertPendingDraft({
-    contact_handle: fromHandle,
-    chat_guid: chatGuid,
-    draft_body: safeBody,
-    context: directive.context || null,
-    expires_at: calcExpiry(),
-  });
 }
