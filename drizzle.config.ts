@@ -1,16 +1,11 @@
 import { defineConfig } from "drizzle-kit";
-import { z } from "zod";
-import { formatZodError } from "./src/lib/utils/validation";
+import { formatZodError, DatabaseUrlSchema } from "./src/lib/utils/validation";
 
 /**
  * Drizzle config environment validation
  */
-const DrizzleEnvSchema = z.object({
-  DATABASE_URL: z.string().url("DATABASE_URL must be a valid PostgreSQL URL"),
-});
-
 function validateEnv() {
-  const result = DrizzleEnvSchema.safeParse({
+  const result = DatabaseUrlSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
   });
 

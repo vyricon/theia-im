@@ -1,18 +1,13 @@
 import postgres from "postgres";
 import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { z } from "zod";
-import { formatZodError } from "../utils/validation";
+import { formatZodError, DatabaseUrlSchema } from "../utils/validation";
 import * as schema from "./schema";
 
 /**
  * Database environment validation with Zod
  */
-const DbEnvSchema = z.object({
-  DATABASE_URL: z.string().url("DATABASE_URL must be a valid PostgreSQL URL"),
-});
-
 function validateDbEnv() {
-  const result = DbEnvSchema.safeParse({
+  const result = DatabaseUrlSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
   });
 

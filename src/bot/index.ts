@@ -14,7 +14,12 @@ const BotEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z
     .string()
     .min(1, "SUPABASE_SERVICE_ROLE_KEY is required"),
-  DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
+  DATABASE_URL: z
+    .string()
+    .regex(
+      /^postgres(ql)?:\/\//,
+      "DATABASE_URL must be a valid PostgreSQL connection string (starting with postgresql:// or postgres://)"
+    ),
 });
 
 /**
@@ -30,7 +35,8 @@ function validateEnv() {
   if (!result.success) {
     console.error("❌ Environment validation failed:");
     result.error.issues.forEach((issue) => {
-      console.error(`  - ${issue.path.join(".")}: ${issue.message}`);
+      const path = issue.path.length > 0 ? issue.path.join(".") : "root";
+      console.error(`  - ${path}: ${issue.message}`);
     });
     process.exit(1);
   }
