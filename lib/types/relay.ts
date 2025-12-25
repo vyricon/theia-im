@@ -9,6 +9,15 @@ import type { Message } from './message';
 export const UserStatusEnum = z.enum(['available', 'busy', 'away', 'sleep', 'dnd']);
 export type UserStatus = z.infer<typeof UserStatusEnum>;
 
+export const UserStatusSchema = z.object({
+  id: z.string().uuid().optional(),
+  user_phone: z.string(),
+  status: UserStatusEnum,
+  auto_respond_enabled: z.boolean().optional(),
+  updated_at: z.string().optional(),
+});
+export type UserStatusType = z.infer<typeof UserStatusSchema>;
+
 // Relay Message Types
 export const RelayMethodEnum = z.enum(['manual', 'auto', 'urgent']);
 export type RelayMethod = z.infer<typeof RelayMethodEnum>;
@@ -39,8 +48,8 @@ export const RelayCommandSchema = z.object({
 });
 export type RelayCommand = z.infer<typeof RelayCommandSchema>;
 
-// Use Message type from advanced-imessage-kit
-export type { Message };
+// Re-export Message types from advanced-imessage-kit
+export type { Message, MessageResponse } from './message';
 
 // Constants
 export const URGENT_KEYWORDS = [

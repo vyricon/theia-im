@@ -44,8 +44,13 @@ sdk.on('new-message', async (message) => {
 
     console.log(`\n📨 New message: ${message.text.substring(0, 50)}...`);
 
-    // Build chatGuid for sending
-    const chatGuid = message.chatGuid;
+    // Get chatGuid from message (use the first chat)
+    const chat = message.chats?.[0];
+    if (!chat) {
+      console.log('⚠️ No chat found for message, skipping');
+      return;
+    }
+    const chatGuid = chat.guid;
 
     // ============================================
     // SCENARIO 1: Message FROM YOU (Relay Mode)

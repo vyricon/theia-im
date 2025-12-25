@@ -3,8 +3,9 @@ import { generateText } from 'ai';
 import { getModel } from '../ai/gateway';
 import {
   UserStatus,
+  UserStatusSchema,
   RelayCommand,
-  Message,
+  MessageResponse,
   RelayMessageType,
   URGENT_KEYWORDS,
   STATUS_MESSAGES,
@@ -24,7 +25,7 @@ export class RelayManager {
   /**
    * Check if message is from you
    */
-  isFromYou(msg: Message): boolean {
+  isFromYou(msg: MessageResponse): boolean {
     return msg.isFromMe || msg.handle?.address === this.yourPhone;
   }
 
@@ -139,7 +140,7 @@ export class RelayManager {
   /**
    * Decide if should auto-respond to a message
    */
-  async shouldAutoRespond(msg: Message): Promise<boolean> {
+  async shouldAutoRespond(msg: MessageResponse): Promise<boolean> {
     try {
       const status = await this.getStatus();
       const isUrgent = this.detectUrgency(msg.text || '');
@@ -179,7 +180,7 @@ export class RelayManager {
   /**
    * Generate auto-response using modern AI SDK v4
    */
-  async generateAutoResponse(msg: Message): Promise<string> {
+  async generateAutoResponse(msg: MessageResponse): Promise<string> {
     try {
       const status = await this.getStatus();
 
