@@ -11,7 +11,8 @@
     "bot:dev": "tsx watch src/bot/index.ts",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
-    "drizzle:studio": "drizzle-kit studio"
+    "drizzle:studio": "drizzle-kit studio"}
+  
   },
   "dependencies": {
     "drizzle-orm": "^0.44.0",
