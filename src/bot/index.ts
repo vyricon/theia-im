@@ -52,7 +52,7 @@ async function main() {
 
   // Import the bot handler after env validation
   const { handleIncomingMessage } = await import(
-    "../../scripts/theia-bot.ts"
+    "../../scripts/theia-bot"
   );
 
   console.log("✅ Bot logic loaded");
