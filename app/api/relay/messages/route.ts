@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import { createSupabaseServerClient } from '@/src/lib/supabase/client';
 
 /**
  * GET /api/relay/messages
@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = createSupabaseServerClient();
     const searchParams = request.nextUrl.searchParams;
     const limit = Number.parseInt(searchParams.get('limit') || '50', 10);
     const from = searchParams.get('from');

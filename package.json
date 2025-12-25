@@ -11,8 +11,7 @@
     "bot:dev": "tsx watch src/bot/index.ts",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
-    "drizzle:studio": "drizzle-kit studio"}
-  
+    "drizzle:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "drizzle-orm": "^0.44.0",
@@ -22,9 +21,7 @@
     "react-dom": "^19.0.0",
     "@supabase/supabase-js": "^2.57.0",
     "libphonenumber-js": "^1.11.14",
-    "zod": "^3.25.0"{
-  }
-}
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

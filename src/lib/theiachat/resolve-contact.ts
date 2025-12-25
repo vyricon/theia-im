@@ -2,8 +2,9 @@ import { and, eq } from 'drizzle-orm';
 import {
   theiachatContacts,
   theiachatContactIdentifiers,
-} from '../../../drizzle/schema';
+} from '../db/schema';
 import { normalizeIdentifier } from './identifiers';
+import type { Db } from '../db';
 
 /**
  * Resolve a contact within a workspace by identifier (email/phone).
@@ -12,7 +13,7 @@ import { normalizeIdentifier } from './identifiers';
  *  - email: lowercase
  *  - phone: E.164, plus-only
  */
-export async function resolveContactByIdentifier(db: any, args: {
+export async function resolveContactByIdentifier(db: Db, args: {
   workspace_id: string;
   identifier: {
     kind: 'email' | 'phone';

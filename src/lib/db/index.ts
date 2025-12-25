@@ -1,5 +1,6 @@
 import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
+import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import * as schema from "./schema";
 
 function requireEnv(name: string): string {
   const v = process.env[name];
@@ -26,4 +27,6 @@ if (process.env.NODE_ENV !== "production") {
   globalForDb.__theia_sql = sql;
 }
 
-export const db = drizzle(sql);
+export const db = drizzle(sql, { schema });
+
+export type Db = PostgresJsDatabase<typeof schema>;
