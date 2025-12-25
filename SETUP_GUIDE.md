@@ -61,10 +61,16 @@ YOUR_PHONE_NUMBER=+1234567890
 DATABASE_URL=postgresql://user:password@host:5432/database
 
 # Supabase (REQUIRED - server-only)
+# ⚠️ CRITICAL SECURITY: These keys have ADMIN PRIVILEGES
+# - NEVER use NEXT_PUBLIC_ prefix for these variables
+# - ONLY import src/lib/supabase/client.ts from server-side code
+# - Valid server-side contexts: API routes, server components, bot scripts
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # Supabase (Optional - for browser/client usage)
+# Use ONLY if you need client-side Supabase access
+# These use the public anon key with Row Level Security
 # NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 # NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
@@ -82,6 +88,7 @@ THEIA_DRAFT_TTL_MINUTES=120
 - `DATABASE_URL` and `SUPABASE_URL` are **server-only** - never use `NEXT_PUBLIC_` prefix
 - `SUPABASE_SERVICE_ROLE_KEY` has admin privileges - keep it secret
 - Only use `NEXT_PUBLIC_*` variables for client-side browser access
+- All critical environment variables are validated with Zod at runtime
 
 ### Step 4: Set Up Database
 

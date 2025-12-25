@@ -1,3 +1,13 @@
+/**
+ * Legacy vendor types from advanced-imessage-kit SDK.
+ * 
+ * ⚠️ NOTE: This file contains `any` types that come directly from the vendor SDK.
+ * The `properties` field uses `any` because it contains opaque SDK-internal data
+ * with no publicly documented structure.
+ * 
+ * These vendor types should not be modified. Wrap them with stricter types
+ * in your application code if needed (see src/lib/types/).
+ */
 import type { Handle, HandleResponse } from "./handle";
 import type { MessageResponse } from "./message";
 

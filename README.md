@@ -73,10 +73,14 @@ npm run bot
 SERVER_URL=http://localhost:1234
 API_KEY=  # Optional - only if server requires auth
 
-# Database (required)
+# Database (REQUIRED - server-only)
 DATABASE_URL=postgresql://user:password@host:5432/database
 
-# Supabase (server-only)
+# Supabase (REQUIRED - server-only)
+# ⚠️ CRITICAL SECURITY: These keys have ADMIN PRIVILEGES
+# - NEVER use NEXT_PUBLIC_ prefix for these variables
+# - ONLY import src/lib/supabase/client.ts from server-side code
+# - Valid server-side contexts: API routes, server components, bot scripts
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
@@ -93,10 +97,11 @@ OPENAI_API_KEY=your-openai-key
 YOUR_PHONE_NUMBER=+1234567890
 ```
 
-**Important Notes:**
-- `SUPABASE_URL` and `DATABASE_URL` are **server-only** and must not use `NEXT_PUBLIC_` prefix
-- `SUPABASE_SERVICE_ROLE_KEY` contains admin privileges - never expose in client code
+**⚠️ CRITICAL SECURITY NOTES:**
+- `DATABASE_URL` and `SUPABASE_URL` are **server-only** and must NEVER use `NEXT_PUBLIC_` prefix
+- `SUPABASE_SERVICE_ROLE_KEY` contains admin privileges - NEVER expose in client code
 - Client-side Supabase access (if needed) uses `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- All environment variables are validated with Zod at runtime in server entry points
 
 ### 3. Database Setup
 

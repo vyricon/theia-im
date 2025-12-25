@@ -1,14 +1,25 @@
 import postgres from "postgres";
 import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { formatZodError, DatabaseUrlSchema } from "../utils/validation";
 import * as schema from "./schema";
 
-function requireEnv(name: string): string {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing required env var: ${name}`);
-  return v;
+/**
+ * Database environment validation with Zod
+ */
+function validateDbEnv() {
+  const result = DatabaseUrlSchema.safeParse({
+    DATABASE_URL: process.env.DATABASE_URL,
+  });
+
+  if (!result.success) {
+    throw new Error(formatZodError(result.error, "Invalid database environment"));
+  }
+
+  return result.data;
 }
 
-const databaseUrl = requireEnv("DATABASE_URL");
+const env = validateDbEnv();
+const databaseUrl = env.DATABASE_URL;
 
 // Reuse a single connection in dev to avoid exhausting connections with hot reloads.
 // (Safe in Node runtimes; not intended for edge runtimes.)
