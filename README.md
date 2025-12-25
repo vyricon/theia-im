@@ -1,6 +1,6 @@
 # Theia Smart Relay Mode 🤖
 
-AI-powered iMessage relay and auto-response system using BlueBubbles Server, Next.js 16, and AI SDK Gateway.
+AI-powered iMessage relay and auto-response system using Advanced iMessage Kit, Next.js 16, and AI SDK Gateway.
 
 ## 🚀 Quick Start
 
@@ -8,9 +8,9 @@ AI-powered iMessage relay and auto-response system using BlueBubbles Server, Nex
 # 1. Install dependencies
 npm install
 
-# 2. Set up BlueBubbles Server
-# Download from: https://bluebubbles.app
-# Run and get your server URL and password
+# 2. Ensure iMessage SDK server is running
+# The SDK accesses iMessage database directly on macOS
+# Default server URL: http://localhost:1234
 
 # 3. Configure environment
 cp .env.example .env
@@ -28,7 +28,7 @@ npm run bot
 
 - **Next.js 16**: Latest App Router with Turbopack
 - **AI SDK Gateway**: Unified access to x.ai Grok and OpenAI
-- **Advanced iMessage Kit**: BlueBubbles Server integration
+- **Advanced iMessage Kit**: Direct iMessage database integration
 - **Supabase**: PostgreSQL database for memory
 - **TypeScript**: Full type safety with Zod validation
 
@@ -53,26 +53,25 @@ npm run bot
 
 - macOS (for iMessage)
 - Node.js 20+
-- [BlueBubbles Server](https://bluebubbles.app) running
+- iMessage configured on your Mac
 - Supabase account
 - OpenAI or x.ai API key
 
 ## 🔧 Setup
 
-### 1. BlueBubbles Server
+### 1. iMessage Setup
 
-1. Download from https://bluebubbles.app
-2. Install and launch
-3. Configure iMessage integration
-4. Note your server URL (default: `http://localhost:1234`)
-5. Set a password in settings
+1. Ensure iMessage is configured on your Mac
+2. The SDK accesses the iMessage database directly
+3. Default server URL: `http://localhost:1234`
+4. Optional: Set API_KEY if server requires authentication
 
 ### 2. Environment Variables
 
 ```env
-# BlueBubbles
-BLUEBUBBLES_URL=http://localhost:1234
-BLUEBUBBLES_PASSWORD=your-password
+# Advanced iMessage Kit Server
+SERVER_URL=http://localhost:1234
+API_KEY=  # Optional - only if server requires auth
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
@@ -150,7 +149,7 @@ You → "@Alice Send: Meeting at 3pm"
   ↓
 Parse command
   ↓
-Send to Alice via BlueBubbles
+Send to Alice via iMessage SDK
   ↓
 Confirm to you
 ```
@@ -171,14 +170,14 @@ If available: Relay to you
 
 - **Next.js 16**: App Router, Turbopack
 - **@ai-sdk/gateway**: Unified AI provider access
-- **@photon-ai/advanced-imessage-kit**: BlueBubbles integration
+- **@photon-ai/advanced-imessage-kit**: Direct iMessage database access
 - **Supabase**: PostgreSQL database
 - **Zod**: Runtime validation
 - **TypeScript 5.7**: Full type safety
 
 ## 📚 Documentation
 
-- [BlueBubbles Setup](https://docs.bluebubbles.app)
+- [Advanced iMessage Kit](https://github.com/photon-hq/advanced-imessage-kit)
 - [AI SDK Gateway](https://ai-sdk.dev/docs)
 - [Next.js 16 Docs](https://nextjs.org/docs)
 

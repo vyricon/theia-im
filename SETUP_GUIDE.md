@@ -12,7 +12,7 @@ This is a production-ready AI-powered iMessage relay system that acts as your pe
 - **React 19** - Latest React
 - **TypeScript 5.7** - Latest TypeScript
 - **AI SDK Gateway** (`@ai-sdk/gateway@3.0`) - Official AI provider interface
-- **Advanced iMessage Kit** - BlueBubbles Server integration
+- **Advanced iMessage Kit** - Direct iMessage database access
 - **Supabase** - PostgreSQL database
 - **Zod 3.24** - Runtime validation
 
@@ -20,20 +20,18 @@ This is a production-ready AI-powered iMessage relay system that acts as your pe
 
 1. **macOS** - Required for iMessage
 2. **Node.js 20+** - Latest LTS
-3. **BlueBubbles Server** - Download from https://bluebubbles.app
+3. **iMessage** - Configured on your Mac
 4. **Supabase Account** - Free tier works
 5. **AI API Key** - x.ai or OpenAI
 
 ## 🚀 Quick Start
 
-### Step 1: Install BlueBubbles Server
+### Step 1: Verify iMessage Setup
 
-1. Download from https://bluebubbles.app
-2. Install on your Mac
-3. Launch and complete setup
-4. Configure iMessage access
-5. Set a password in BlueBubbles settings
-6. Note the server URL (usually `http://localhost:1234`)
+1. Ensure iMessage is configured on your Mac
+2. The SDK accesses iMessage database directly
+3. No external server required (runs locally)
+4. Default server URL: `http://localhost:1234`
 
 ### Step 2: Clone and Install
 
@@ -52,9 +50,9 @@ cp .env.example .env
 Edit `.env`:
 
 ```env
-# BlueBubbles Server (REQUIRED)
-BLUEBUBBLES_URL=http://localhost:1234
-BLUEBUBBLES_PASSWORD=your-bluebubbles-password
+# Advanced iMessage Kit Server (REQUIRED)
+SERVER_URL=http://localhost:1234
+API_KEY=  # Optional - only if server requires auth
 
 # Your Phone (REQUIRED)
 YOUR_PHONE_NUMBER=+1234567890
@@ -97,7 +95,7 @@ You should see:
 ```
 🤖 Theia Smart Relay Bot started...
 📱 Your phone: +1234567890
-🔵 BlueBubbles: http://localhost:1234
+🟢 iMessage SDK Server: http://localhost:1234
 👁️  Watching for messages...
 ```
 
@@ -183,7 +181,7 @@ Theia → You: 📊 Message Digest (last 2 hours):
 ```
 You type: "@Alice Send: Meeting at 3pm"
     ↓
-Theia receives via BlueBubbles
+Theia receives via iMessage SDK
     ↓
 Parses command: target=Alice, message="Meeting at 3pm"
     ↓
@@ -256,18 +254,18 @@ Your communication style (tone, phrases, emoji usage).
 ### Bot Won't Start
 
 **Error: "BLUEBUBBLES_PASSWORD not configured"**
-- Install BlueBubbles Server first
-- Set password in BlueBubbles settings
-- Add to `.env`
+- This error is outdated - no BlueBubbles required
+- Ensure SERVER_URL is set in `.env`
+- Optional: Set API_KEY if server requires auth
 
 **Error: "YOUR_PHONE_NUMBER not configured"**
 - Add your phone number to `.env` in E.164 format: `+1234567890`
 
 ### Messages Not Received
 
-1. Check BlueBubbles Server is running
+1. Check iMessage SDK server is accessible
 2. Verify iMessage is enabled and signed in
-3. Check BlueBubbles URL is correct
+3. Check SERVER_URL is correct in `.env`
 4. View bot console logs for errors
 
 ### Auto-Respond Not Working
@@ -365,9 +363,9 @@ MIT
 ## 🤝 Support
 
 - GitHub Issues: https://github.com/vyricon/theia-im/issues
-- BlueBubbles Docs: https://docs.bluebubbles.app
+- Advanced iMessage Kit Docs: https://github.com/photon-hq/advanced-imessage-kit
 - AI SDK Docs: https://ai-sdk.dev/docs
 
 ---
 
-**Built with Next.js 16, AI SDK Gateway, and BlueBubbles** 🚀
+**Built with Next.js 16, AI SDK Gateway, and Advanced iMessage Kit** 🚀

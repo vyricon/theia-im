@@ -7,7 +7,7 @@ export default function Home() {
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold">🚀 Status</h2>
           <p>Bot Status: Run <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">npm run bot</code> to start</p>
-          <p>BlueBubbles Server: Ensure it's running at <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">http://localhost:1234</code></p>
+          <p>iMessage SDK Server: Ensure it's accessible at <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">http://localhost:1234</code></p>
         </section>
 
         <section className="space-y-4">
@@ -36,7 +36,7 @@ export default function Home() {
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold">🔧 Setup</h2>
           <ol className="list-decimal pl-6 space-y-2">
-            <li>Install and run <a href="https://bluebubbles.app" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">BlueBubbles Server</a></li>
+            <li>Verify iMessage is configured on your Mac</li>
             <li>Configure environment variables in <code>.env</code></li>
             <li>Run database migrations on Supabase</li>
             <li>Start the bot: <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">npm run bot</code></li>

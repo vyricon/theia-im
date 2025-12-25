@@ -266,7 +266,7 @@ All required phases from the feature specification have been **FULLY IMPLEMENTED
 ## Architecture Compliance
 
 ### Follows Spec Exactly:
-- ✅ Uses `@photon-ai/advanced-imessage-kit` (NOT basic kit, NOT BlueBubbles)
+- ✅ Uses `@photon-ai/advanced-imessage-kit` (NOT basic kit)
 - ✅ SDK initialization matches repo examples EXACTLY
 - ✅ Event handling matches repo examples EXACTLY
 - ✅ Message types from repo (`Message`, not custom types)
