@@ -1,5 +1,6 @@
 import { defineConfig } from "drizzle-kit";
 import { z } from "zod";
+import { formatZodError } from "./src/lib/utils/validation";
 
 /**
  * Drizzle config environment validation
@@ -14,9 +15,7 @@ function validateEnv() {
   });
 
   if (!result.success) {
-    throw new Error(
-      `Invalid Drizzle environment:\n${result.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n")}`
-    );
+    throw new Error(formatZodError(result.error, "Invalid Drizzle environment"));
   }
 
   return result.data;

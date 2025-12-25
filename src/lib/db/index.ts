@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { drizzle, PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { z } from "zod";
+import { formatZodError } from "../utils/validation";
 import * as schema from "./schema";
 
 /**
@@ -16,9 +17,7 @@ function validateDbEnv() {
   });
 
   if (!result.success) {
-    throw new Error(
-      `Invalid database environment:\n${result.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n")}`
-    );
+    throw new Error(formatZodError(result.error, "Invalid database environment"));
   }
 
   return result.data;
