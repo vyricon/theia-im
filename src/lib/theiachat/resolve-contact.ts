@@ -1,49 +1,47 @@
-import { and, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { theiachatContacts } from "@/lib/db/schema/theiachat_contacts";
-import { theiachatContactIdentifiers } from "@/lib/db/schema/theiachat_contact_identifiers";
-import { normalizeIdentifier, type TheiaChatIdentifierInput } from "./identifiers";
+import { and, eq } from 'drizzle-orm';
+import {
+  theiachatContacts,
+  theiachatContactIdentifiers,
+} from '../../../drizzle/schema';
+import { normalizeIdentifier } from './identifiers';
 
-export async function resolveContactId(params: {
-  workspaceId: string;
-  identifier: TheiaChatIdentifierInput;
-  displayName?: string | null;
-}): Promise<string> {
-  const { workspaceId, displayName } = params;
-  const id = normalizeIdentifier(params.identifier);
+/**
+ * Resolve a contact within a workspace by identifier (email/phone).
+ *
+ * This relies on theiachat_contact_identifiers.value_norm being normalized:
+ *  - email: lowercase
+ *  - phone: E.164, plus-only
+ */
+export async function resolveContactByIdentifier(db: any, args: {
+  workspace_id: string;
+  identifier: {
+    kind: 'email' | 'phone';
+    value: string;
+    phone_mode?: 'plus_only';
+  };
+}): Promise<{ contact_id: string } | null> {
+  const norm = normalizeIdentifier({
+    kind: args.identifier.kind,
+    value: args.identifier.value,
+    phone_mode: args.identifier.phone_mode ?? 'plus_only',
+  });
 
-  const existing = await db
-    .select({ contactId: theiachatContactIdentifiers.contactId })
+  const rows = await db
+    .select({ contact_id: theiachatContacts.id })
     .from(theiachatContactIdentifiers)
+    .innerJoin(
+      theiachatContacts,
+      eq(theiachatContacts.id, theiachatContactIdentifiers.contact_id),
+    )
     .where(
       and(
-        eq(theiachatContactIdentifiers.workspaceId, workspaceId),
-        eq(theiachatContactIdentifiers.kind, id.kind),
-        eq(theiachatContactIdentifiers.valueNorm, id.valueNorm),
+        eq(theiachatContactIdentifiers.workspace_id, args.workspace_id),
+        eq(theiachatContactIdentifiers.kind, norm.kind),
+        eq(theiachatContactIdentifiers.value_norm, norm.value_norm),
       ),
     )
     .limit(1);
 
-  if (existing[0]?.contactId) return existing[0].contactId;
-
-  const inserted = await db
-    .insert(theiachatContacts)
-    .values({
-      workspaceId,
-      displayName: displayName ?? null,
-    })
-    .returning({ id: theiachatContacts.id });
-
-  const contactId = inserted[0]!.id;
-
-  await db.insert(theiachatContactIdentifiers).values({
-    workspaceId,
-    contactId,
-    kind: id.kind,
-    valueRaw: id.valueRaw,
-    valueNorm: id.valueNorm,
-    isPrimary: true,
-  });
-
-  return contactId;
+  if (rows.length === 0) return null;
+  return { contact_id: rows[0].contact_id };
 }
